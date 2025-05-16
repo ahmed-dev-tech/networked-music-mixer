@@ -18,12 +18,14 @@ import {
 const QueueContext = createContext<QueueContextType>({
     queue: [],
     currentSongIndex: 0,
+    isPlaying: false,
+    username: null,
+    setUsername: () => {},
     addToQueue: async () => {},
-    removeFromQueue: () => {},
+    removeFromQueue: async () => {},
     playNext: () => {},
     playPrevious: () => {},
     skipTo: () => {},
-    isPlaying: false,
     togglePlayPause: () => {},
     likeSong: async () => {},
     dislikeSong: async () => {},
@@ -31,6 +33,8 @@ const QueueContext = createContext<QueueContextType>({
     getDislikeCount: () => 0,
     hasLiked: () => false,
     hasDisliked: () => false,
+    isSynced: false,
+    toggleSync: () => {},
 });
 
 // Hook to use the queue context
@@ -42,14 +46,27 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
     const [queue, setQueue] = useState<Song[]>([]);
     const [currentSongIndex, setCurrentSongIndex] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
-
-    // Generate a random username for this session
-    const [username] = useState<string>(() => {
-        const names = ["User", "Guest", "Friend", "Listener", "DJ"];
-        const randomName = names[Math.floor(Math.random() * names.length)];
-        const randomNum = Math.floor(Math.random() * 1000);
-        return `${randomName}${randomNum}`;
+    const [isSynced, setIsSynced] = useState<boolean>(() => {
+        // Initialize sync state from localStorage
+        return localStorage.getItem("musicAppSync") === "true";
     });
+    const [username, setUsernameState] = useState<string | null>(() => {
+        // Initialize username from localStorage
+        return localStorage.getItem("musicAppUsername");
+    });
+
+    // Update localStorage when sync state changes
+    const toggleSync = () => {
+        const newSyncState = !isSynced;
+        setIsSynced(newSyncState);
+        localStorage.setItem("musicAppSync", newSyncState.toString());
+    };
+
+    // Update localStorage when username changes
+    const setUsername = (newUsername: string) => {
+        setUsernameState(newUsername);
+        localStorage.setItem("musicAppUsername", newUsername);
+    };
 
     // Helper functions for likes and dislikes
     const getLikeCount = (song: Song) => {
@@ -63,16 +80,21 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     const hasLiked = (song: Song) => {
-        if (!song.likes) return false;
+        if (!song.likes || !username) return false;
         return Boolean(song.likes[username]);
     };
 
     const hasDisliked = (song: Song) => {
-        if (!song.dislikes) return false;
+        if (!song.dislikes || !username) return false;
         return Boolean(song.dislikes[username]);
     };
 
     const likeSong = async (songId: string) => {
+        if (!username) {
+            toast.error("Please set your username first");
+            return;
+        }
+
         try {
             const song = queue.find((s) => s.id === songId);
             if (!song) {
@@ -131,6 +153,11 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     const dislikeSong = async (songId: string) => {
+        if (!username) {
+            toast.error("Please set your username first");
+            return;
+        }
+
         try {
             const song = queue.find((s) => s.id === songId);
             if (!song) {
@@ -194,7 +221,7 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
         const currentIndexRef = ref(database, "currentIndex");
         const isPlayingRef = ref(database, "isPlaying");
 
-        // Listen to queue changes
+        // Listen to queue changes (always active)
         const unsubscribeQueue = onValue(queueRef, (snapshot) => {
             const data = snapshot.val();
             console.log("Queue data received:", data);
@@ -212,23 +239,29 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
             }
         });
 
-        // Listen to current index changes
-        const unsubscribeIndex = onValue(currentIndexRef, (snapshot) => {
-            const data = snapshot.val();
-            console.log("Current index received:", data);
-            if (data !== null) {
-                setCurrentSongIndex(data);
-            }
-        });
+        // Only listen to playback state changes if sync is enabled
+        let unsubscribeIndex: () => void;
+        let unsubscribePlaying: () => void;
 
-        // Listen to isPlaying changes
-        const unsubscribePlaying = onValue(isPlayingRef, (snapshot) => {
-            const data = snapshot.val();
-            console.log("Is playing received:", data);
-            if (data !== null) {
-                setIsPlaying(data);
-            }
-        });
+        if (isSynced) {
+            // Listen to current index changes
+            unsubscribeIndex = onValue(currentIndexRef, (snapshot) => {
+                const data = snapshot.val();
+                console.log("Current index received:", data);
+                if (data !== null) {
+                    setCurrentSongIndex(data);
+                }
+            });
+
+            // Listen to isPlaying changes
+            unsubscribePlaying = onValue(isPlayingRef, (snapshot) => {
+                const data = snapshot.val();
+                console.log("Is playing received:", data);
+                if (data !== null) {
+                    setIsPlaying(data);
+                }
+            });
+        }
 
         // Initialize the database if it's empty
         const initializeDatabase = async () => {
@@ -249,10 +282,12 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
 
         return () => {
             unsubscribeQueue();
-            unsubscribeIndex();
-            unsubscribePlaying();
+            if (isSynced) {
+                unsubscribeIndex();
+                unsubscribePlaying();
+            }
         };
-    }, []);
+    }, [isSynced]); // Add isSynced to dependencies
 
     // Fetch video title from YouTube
     const fetchVideoDetails = async (
@@ -266,6 +301,11 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     const addToQueue = async (url: string) => {
+        if (!username) {
+            toast.error("Please set your username first");
+            return;
+        }
+
         try {
             const videoId = extractVideoId(url);
             if (!videoId) {
@@ -315,15 +355,9 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
         try {
             console.log("Attempting to remove song with ID:", id);
 
-            // Find the song in the queue first
-            const songToRemove = queue.find((song) => song.id === id);
-            if (!songToRemove) {
-                console.log("Song not found in queue:", id);
-                return;
-            }
-
             // Get the queue reference
             const queueRef = ref(database, "queue");
+            const currentIndexRef = ref(database, "currentIndex");
 
             // Get the current queue data
             const queueSnapshot = await get(queueRef);
@@ -344,33 +378,32 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 return;
             }
 
+            // Get the current index
+            const currentIndexSnapshot = await get(currentIndexRef);
+            const currentIndex = currentIndexSnapshot.val() || 0;
+
             // Remove the song
             const songRef = ref(database, `queue/${songKey}`);
             await remove(songRef);
             console.log("Successfully removed song from Firebase");
 
-            // Update current index if needed
-            const songIndex = queue.findIndex((song) => song.id === id);
-            if (songIndex === currentSongIndex) {
-                if (queue.length > 1) {
-                    // If we're removing the current song, move to the next one
-                    const newIndex =
-                        songIndex === queue.length - 1
-                            ? songIndex - 1
-                            : songIndex;
-                    console.log("Updating current index to:", newIndex);
-                    await set(ref(database, "currentIndex"), newIndex);
-                } else {
-                    // If this was the last song, reset the player
-                    console.log("Queue is now empty, resetting player state");
-                    await set(ref(database, "currentIndex"), 0);
-                    await set(ref(database, "isPlaying"), false);
-                }
-            } else if (songIndex < currentSongIndex) {
-                // If we removed a song before the current one, adjust the index
-                console.log("Adjusting current index after removal");
-                await set(ref(database, "currentIndex"), currentSongIndex - 1);
+            // Calculate the new index
+            let newIndex = currentIndex;
+            const remainingSongs = Object.values(queueData).filter(
+                (song: any) => song.id !== id
+            );
+
+            if (remainingSongs.length === 0) {
+                // If queue is now empty, reset to 0
+                newIndex = 0;
+            } else if (currentIndex >= remainingSongs.length) {
+                // If current index is now out of bounds, set to last song
+                newIndex = remainingSongs.length - 1;
             }
+
+            // Update the current index
+            await set(currentIndexRef, newIndex);
+            console.log("Updated current index to:", newIndex);
 
             toast.success("Removed from queue");
         } catch (error: any) {
@@ -473,6 +506,12 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     const togglePlayPause = async () => {
+        if (!isSynced) {
+            // If sync is disabled, only update local state
+            setIsPlaying(!isPlaying);
+            return;
+        }
+
         try {
             const newIsPlaying = !isPlaying;
             await set(ref(database, "isPlaying"), newIsPlaying);
@@ -501,6 +540,10 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 getDislikeCount,
                 hasLiked,
                 hasDisliked,
+                username,
+                setUsername,
+                isSynced,
+                toggleSync,
             }}
         >
             {children}

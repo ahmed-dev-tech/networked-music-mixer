@@ -12,12 +12,14 @@ export interface Song {
 export interface QueueContextType {
     queue: Song[];
     currentSongIndex: number;
+    isPlaying: boolean;
+    username: string | null;
+    setUsername: (username: string) => void;
     addToQueue: (url: string) => Promise<void>;
     removeFromQueue: (id: string) => void;
     playNext: () => void;
     playPrevious: () => void;
     skipTo: (index: number) => void;
-    isPlaying: boolean;
     togglePlayPause: () => void;
     likeSong: (songId: string) => Promise<void>;
     dislikeSong: (songId: string) => Promise<void>;
@@ -25,4 +27,6 @@ export interface QueueContextType {
     getDislikeCount: (song: Song) => number;
     hasLiked: (song: Song) => boolean;
     hasDisliked: (song: Song) => boolean;
+    isSynced: boolean;
+    toggleSync: () => void;
 }

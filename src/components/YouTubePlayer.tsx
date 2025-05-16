@@ -3,91 +3,161 @@ import { useQueue } from "../contexts/QueueContext";
 import { formatYoutubeEmbedUrl } from "../utils/youtubeUtils";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Add TypeScript interface for YouTube IFrame API
+declare global {
+    interface Window {
+        onYouTubeIframeAPIReady: () => void;
+        YT: {
+            Player: new (
+                elementId: string,
+                options: {
+                    videoId: string;
+                    playerVars?: {
+                        autoplay?: number;
+                        controls?: number;
+                        enablejsapi?: number;
+                        origin?: string;
+                    };
+                    events?: {
+                        onReady?: (event: any) => void;
+                        onStateChange?: (event: any) => void;
+                    };
+                }
+            ) => any;
+            PlayerState: {
+                ENDED: number;
+                PLAYING: number;
+                PAUSED: number;
+                BUFFERING: number;
+                CUED: number;
+            };
+        };
+    }
+}
+
 const YouTubePlayer: React.FC = () => {
     const { queue, currentSongIndex, playNext, isPlaying } = useQueue();
-    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const playerRef = useRef<any>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [playerReady, setPlayerReady] = useState(false);
 
     const currentSong = queue[currentSongIndex];
 
+    // Load YouTube IFrame API
     useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            if (event.origin !== "https://www.youtube.com") return;
+        const loadYouTubeAPI = () => {
+            const tag = document.createElement("script");
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName("script")[0];
+            firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+        };
 
-            try {
-                const data = JSON.parse(event.data);
-                console.log("YouTube player message:", data);
+        if (!window.YT) {
+            loadYouTubeAPI();
+        }
 
-                if (data.event === "onReady") {
-                    console.log("YouTube player is ready");
-                    setPlayerReady(true);
-                }
-
-                // YouTube video ended
-                if (data.event === "onStateChange") {
-                    switch (data.info) {
-                        case 0: // Video ended
-                            console.log("Video ended, playing next");
-                            playNext();
-                            break;
-                        case 1: // Video playing
-                            console.log("Video started playing");
-                            break;
-                        case 2: // Video paused
-                            console.log("Video paused");
-                            break;
-                        case 3: // Video buffering
-                            console.log("Video buffering");
-                            break;
-                        case 5: // Video cued
-                            console.log("Video cued");
-                            break;
-                    }
-                }
-            } catch (e) {
-                // Not a parseable message
-                console.log(
-                    "Non-parseable message from YouTube player:",
-                    event.data
-                );
+        window.onYouTubeIframeAPIReady = () => {
+            console.log("YouTube IFrame API is ready");
+            if (currentSong) {
+                initializePlayer();
             }
         };
 
-        window.addEventListener("message", handleMessage);
-        return () => window.removeEventListener("message", handleMessage);
-    }, [playNext]);
+        return () => {
+            if (playerRef.current) {
+                try {
+                    playerRef.current.destroy();
+                } catch (error) {
+                    console.error("Error destroying player:", error);
+                }
+            }
+        };
+    }, []);
+
+    // Initialize player when song changes
+    useEffect(() => {
+        if (!currentSong || !containerRef.current) return;
+
+        if (window.YT) {
+            initializePlayer();
+        }
+    }, [currentSong]);
+
+    const initializePlayer = () => {
+        if (!currentSong || !containerRef.current) return;
+
+        try {
+            // Destroy existing player if it exists
+            if (playerRef.current) {
+                playerRef.current.destroy();
+            }
+
+            // Create a unique ID for the player container
+            const playerId = `youtube-player-${currentSong.id}`;
+            containerRef.current.id = playerId;
+
+            // Create new player instance
+            playerRef.current = new window.YT.Player(playerId, {
+                videoId: currentSong.videoId,
+                playerVars: {
+                    autoplay: 1,
+                    controls: 1,
+                    enablejsapi: 1,
+                    origin: window.location.origin,
+                },
+                events: {
+                    onReady: (event: any) => {
+                        console.log("YouTube player is ready");
+                        setPlayerReady(true);
+                        if (isPlaying) {
+                            event.target.playVideo();
+                        }
+                    },
+                    onStateChange: (event: any) => {
+                        switch (event.data) {
+                            case window.YT.PlayerState.ENDED:
+                                console.log("Video ended, playing next");
+                                playNext();
+                                break;
+                            case window.YT.PlayerState.PLAYING:
+                                console.log("Video started playing");
+                                break;
+                            case window.YT.PlayerState.PAUSED:
+                                console.log("Video paused");
+                                break;
+                            case window.YT.PlayerState.BUFFERING:
+                                console.log("Video buffering");
+                                break;
+                            case window.YT.PlayerState.CUED:
+                                console.log("Video cued");
+                                break;
+                        }
+                    },
+                },
+            });
+        } catch (error) {
+            console.error("Error initializing player:", error);
+            setPlayerReady(false);
+        }
+    };
 
     // Control player based on isPlaying state
     useEffect(() => {
-        const iframe = iframeRef.current;
-        if (!iframe || !iframe.contentWindow || !playerReady) return;
+        if (!playerRef.current || !playerReady) return;
 
         try {
             if (isPlaying) {
-                console.log("Sending play command to YouTube player");
-                iframe.contentWindow.postMessage(
-                    '{"event":"command","func":"playVideo","args":""}',
-                    "*"
-                );
+                console.log("Playing video");
+                playerRef.current.playVideo();
             } else {
-                console.log("Sending pause command to YouTube player");
-                iframe.contentWindow.postMessage(
-                    '{"event":"command","func":"pauseVideo","args":""}',
-                    "*"
-                );
+                console.log("Pausing video");
+                playerRef.current.pauseVideo();
             }
-        } catch (e) {
-            console.error("Error controlling YouTube player:", e);
+        } catch (error) {
+            console.error("Error controlling player:", error);
+            setPlayerReady(false);
         }
     }, [isPlaying, playerReady]);
-
-    // Update video when currentSong changes
-    useEffect(() => {
-        if (currentSong) {
-            console.log("Current song changed:", currentSong);
-            setPlayerReady(false); // Reset player ready state when song changes
-        }
-    }, [currentSong]);
 
     if (!currentSong) {
         return (
@@ -104,17 +174,7 @@ const YouTubePlayer: React.FC = () => {
 
     return (
         <Card className='player-container w-full aspect-video'>
-            <iframe
-                ref={iframeRef}
-                src={`${formatYoutubeEmbedUrl(
-                    currentSong.videoId
-                )}?enablejsapi=1&origin=${
-                    window.location.origin
-                }&autoplay=1&controls=1`}
-                className='w-full h-full'
-                allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-                allowFullScreen
-            />
+            <div ref={containerRef} className='w-full h-full' />
         </Card>
     );
 };

@@ -3,20 +3,40 @@ import YouTubePlayer from "@/components/YouTubePlayer";
 import PlayControls from "@/components/PlayControls";
 import MusicQueue from "@/components/MusicQueue";
 import AddToQueue from "@/components/AddToQueue";
-import { QueueProvider } from "@/contexts/QueueContext";
+import UsernameDialog from "@/components/UsernameDialog";
+import SyncToggle from "@/components/SyncToggle";
+import { QueueProvider, useQueue } from "@/contexts/QueueContext";
 
-const Index: React.FC = () => {
+const IndexContent: React.FC = () => {
+    const { username, setUsername } = useQueue();
+    const [showUsernameDialog, setShowUsernameDialog] = React.useState(false);
+
+    React.useEffect(() => {
+        // Only show dialog if there's no username in localStorage
+        setShowUsernameDialog(!localStorage.getItem("musicAppUsername"));
+    }, []);
+
     return (
-        <QueueProvider>
+        <>
+            <UsernameDialog
+                isOpen={showUsernameDialog}
+                onSubmit={(newUsername) => {
+                    setUsername(newUsername);
+                    setShowUsernameDialog(false);
+                }}
+            />
             <div className='min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8'>
                 <div className='max-w-screen-xl mx-auto'>
                     <header className='mb-8 text-center'>
                         <h1 className='text-3xl font-bold tracking-tight music-gradient bg-clip-text'>
-                            YouTube Music Party
+                            Music App
                         </h1>
                         <p className='mt-2 text-muted-foreground'>
                             Share YouTube links and listen together
                         </p>
+                        <div className='mt-4 flex justify-center'>
+                            <SyncToggle />
+                        </div>
                     </header>
 
                     <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
@@ -42,6 +62,14 @@ const Index: React.FC = () => {
                     </footer>
                 </div>
             </div>
+        </>
+    );
+};
+
+const Index: React.FC = () => {
+    return (
+        <QueueProvider>
+            <IndexContent />
         </QueueProvider>
     );
 };
