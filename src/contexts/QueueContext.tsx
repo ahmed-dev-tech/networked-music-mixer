@@ -14,6 +14,13 @@ import {
     get,
 } from "firebase/database";
 
+interface LeaderboardEntry {
+    username: string;
+    totalLikes: number;
+    songCount: number;
+    averageLikes: number;
+}
+
 // Create context with default values
 const QueueContext = createContext<QueueContextType>({
     queue: [],
@@ -307,28 +314,33 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Group songs by username
         const userSongs: Record<string, Song[]> = {};
-        
-        queue.forEach(song => {
+
+        queue.forEach((song) => {
             if (!userSongs[song.addedBy]) {
                 userSongs[song.addedBy] = [];
             }
             userSongs[song.addedBy].push(song);
         });
-        
+
         // Calculate stats for each user
-        const leaderboardData = Object.entries(userSongs).map(([username, songs]) => {
-            const totalLikes = songs.reduce((sum, song) => sum + getLikeCount(song), 0);
-            const songCount = songs.length;
-            const averageLikes = songCount > 0 ? totalLikes / songCount : 0;
-            
-            return {
-                username,
-                totalLikes,
-                songCount,
-                averageLikes,
-            };
-        });
-        
+        const leaderboardData = Object.entries(userSongs).map(
+            ([username, songs]) => {
+                const totalLikes = songs.reduce(
+                    (sum, song) => sum + getLikeCount(song),
+                    0
+                );
+                const songCount = songs.length;
+                const averageLikes = songCount > 0 ? totalLikes / songCount : 0;
+
+                return {
+                    username,
+                    totalLikes,
+                    songCount,
+                    averageLikes,
+                };
+            }
+        );
+
         // Sort by total likes (descending)
         return leaderboardData.sort((a, b) => b.totalLikes - a.totalLikes);
     };
@@ -338,6 +350,7 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
         const queueRef = ref(database, "queue");
         const currentIndexRef = ref(database, "currentIndex");
         const isPlayingRef = ref(database, "isPlaying");
+        const leaderboardRef = ref(database, "leaderboard");
 
         // Listen to queue changes (always active)
         const unsubscribeQueue = onValue(queueRef, (snapshot) => {
@@ -351,9 +364,30 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 ) as Song[];
                 console.log("Sorted queue array:", queueArray);
                 setQueue(queueArray);
+
+                // Update leaderboard in Firebase
+                const leaderboardData = getLeaderboard();
+                console.log("Updating leaderboard with data:", leaderboardData);
+
+                // Convert array to object with usernames as keys for better Firebase structure
+                const leaderboardObject = leaderboardData.reduce(
+                    (acc, entry) => {
+                        acc[entry.username] = entry;
+                        return acc;
+                    },
+                    {} as Record<string, LeaderboardEntry>
+                );
+
+                set(leaderboardRef, leaderboardObject).catch((error) => {
+                    console.error("Error updating leaderboard:", error);
+                });
             } else {
                 console.log("Queue is empty");
                 setQueue([]);
+                // Clear leaderboard when queue is empty
+                set(leaderboardRef, {}).catch((error) => {
+                    console.error("Error clearing leaderboard:", error);
+                });
             }
         });
 
@@ -390,6 +424,7 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                     await set(queueRef, {});
                     await set(currentIndexRef, 0);
                     await set(isPlayingRef, false);
+                    await set(leaderboardRef, {});
                 }
             } catch (error) {
                 console.error("Error initializing database:", error);

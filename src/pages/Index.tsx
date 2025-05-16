@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import YouTubePlayer from "@/components/YouTubePlayer";
@@ -7,6 +6,7 @@ import MusicQueue from "@/components/MusicQueue";
 import AddToQueue from "@/components/AddToQueue";
 import UsernameDialog from "@/components/UsernameDialog";
 import SyncToggle from "@/components/SyncToggle";
+import Leaderboard from "@/components/Leaderboard";
 import { QueueProvider, useQueue } from "@/contexts/QueueContext";
 import CommentSection from "@/components/CommentSection";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ const IndexContent: React.FC = () => {
             <div className='min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8'>
                 <div className='max-w-screen-xl mx-auto'>
                     <header className='mb-8 text-center'>
-                        <h1 className='text-4xl font-bold tracking-tighter music-gradient bg-clip-text text-transparent animate-fade-in'>
+                        <h1 className='text-4xl font-bold tracking-tighter music-gradient bg-clip-text animate-fade-in'>
                             Music Party
                         </h1>
                         <p className='mt-2 text-muted-foreground'>
@@ -42,9 +42,13 @@ const IndexContent: React.FC = () => {
                         </p>
                         <div className='mt-4 flex justify-center gap-4 items-center'>
                             <SyncToggle />
-                            <Link to="/leaderboard">
-                                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                                    <Trophy className="h-4 w-4" />
+                            <Link to='/leaderboard'>
+                                <Button
+                                    variant='outline'
+                                    size='sm'
+                                    className='flex items-center gap-2'
+                                >
+                                    <Trophy className='h-4 w-4' />
                                     Leaderboard
                                 </Button>
                             </Link>
@@ -56,7 +60,9 @@ const IndexContent: React.FC = () => {
                             <YouTubePlayer />
                             <PlayControls />
                             <AddToQueue />
-                            {currentSong && <CommentSection song={currentSong} />}
+                            {currentSong && (
+                                <CommentSection song={currentSong} />
+                            )}
                         </div>
 
                         <div className='space-y-4'>
@@ -64,6 +70,7 @@ const IndexContent: React.FC = () => {
                                 Play Queue
                             </h2>
                             <MusicQueue />
+                            <Leaderboard />
                         </div>
                     </div>
 
