@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { useQueue } from "../contexts/QueueContext";
 import { formatYoutubeEmbedUrl } from "../utils/youtubeUtils";
@@ -36,7 +37,7 @@ declare global {
 }
 
 const YouTubePlayer: React.FC = () => {
-    const { queue, currentSongIndex, playNext, isPlaying } = useQueue();
+    const { queue, currentSongIndex, playNext, isPlaying, videoEnabled } = useQueue();
     const playerRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [playerReady, setPlayerReady] = useState(false);
@@ -112,6 +113,14 @@ const YouTubePlayer: React.FC = () => {
                         if (isPlaying) {
                             event.target.playVideo();
                         }
+                        // Handle video/audio only mode
+                        if (!videoEnabled) {
+                            // Hide video by adding CSS
+                            const iframe = event.target.getIframe();
+                            if (iframe && iframe.style) {
+                                iframe.style.opacity = "0";
+                            }
+                        }
                     },
                     onStateChange: (event: any) => {
                         switch (event.data) {
@@ -158,6 +167,20 @@ const YouTubePlayer: React.FC = () => {
             setPlayerReady(false);
         }
     }, [isPlaying, playerReady]);
+
+    // Update video visibility based on videoEnabled state
+    useEffect(() => {
+        if (!playerRef.current || !playerReady) return;
+        
+        try {
+            const iframe = playerRef.current.getIframe();
+            if (iframe && iframe.style) {
+                iframe.style.opacity = videoEnabled ? "1" : "0";
+            }
+        } catch (error) {
+            console.error("Error updating video visibility:", error);
+        }
+    }, [videoEnabled, playerReady]);
 
     if (!currentSong) {
         return (

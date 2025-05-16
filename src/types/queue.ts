@@ -1,3 +1,4 @@
+
 export interface Song {
     id: string;
     videoId: string;
@@ -7,6 +8,14 @@ export interface Song {
     timestamp: number;
     likes: { [userId: string]: boolean };
     dislikes: { [userId: string]: boolean };
+    comments: Comment[];
+}
+
+export interface Comment {
+    id: string;
+    text: string;
+    username: string;
+    timestamp: number;
 }
 
 export interface QueueContextType {
@@ -29,4 +38,8 @@ export interface QueueContextType {
     hasDisliked: (song: Song) => boolean;
     isSynced: boolean;
     toggleSync: () => void;
+    videoEnabled: boolean;
+    toggleVideo: () => void;
+    addComment: (songId: string, text: string) => Promise<void>;
+    getComments: (song: Song) => Comment[];
 }

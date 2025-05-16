@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useQueue } from "@/contexts/QueueContext";
 import { Switch } from "@/components/ui/switch";
@@ -8,13 +9,13 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Users } from "lucide-react";
+import { Users, Video, VideoOff } from "lucide-react";
 
 const SyncToggle: React.FC = () => {
-    const { isSynced, toggleSync } = useQueue();
+    const { isSynced, toggleSync, videoEnabled, toggleVideo } = useQueue();
 
     return (
-        <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-4'>
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -42,6 +43,40 @@ const SyncToggle: React.FC = () => {
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
+
+            {!isSynced && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className='flex items-center gap-2'>
+                                <Switch
+                                    id='video-mode'
+                                    checked={videoEnabled}
+                                    onCheckedChange={toggleVideo}
+                                />
+                                <Label
+                                    htmlFor='video-mode'
+                                    className='flex items-center gap-2'
+                                >
+                                    {videoEnabled ? (
+                                        <Video className='h-4 w-4' />
+                                    ) : (
+                                        <VideoOff className='h-4 w-4' />
+                                    )}
+                                    <span>Video</span>
+                                </Label>
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>
+                                {videoEnabled
+                                    ? "Video is enabled"
+                                    : "Audio only mode"}
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
         </div>
     );
 };
