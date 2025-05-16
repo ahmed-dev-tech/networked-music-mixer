@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Link } from "react-router-dom";
 import YouTubePlayer from "@/components/YouTubePlayer";
 import PlayControls from "@/components/PlayControls";
 import MusicQueue from "@/components/MusicQueue";
@@ -8,6 +9,8 @@ import UsernameDialog from "@/components/UsernameDialog";
 import SyncToggle from "@/components/SyncToggle";
 import { QueueProvider, useQueue } from "@/contexts/QueueContext";
 import CommentSection from "@/components/CommentSection";
+import { Button } from "@/components/ui/button";
+import { Trophy } from "lucide-react";
 
 const IndexContent: React.FC = () => {
     const { username, setUsername, queue, currentSongIndex } = useQueue();
@@ -37,8 +40,14 @@ const IndexContent: React.FC = () => {
                         <p className='mt-2 text-muted-foreground'>
                             Share YouTube links and listen together
                         </p>
-                        <div className='mt-4 flex justify-center'>
+                        <div className='mt-4 flex justify-center gap-4 items-center'>
                             <SyncToggle />
+                            <Link to="/leaderboard">
+                                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                    <Trophy className="h-4 w-4" />
+                                    Leaderboard
+                                </Button>
+                            </Link>
                         </div>
                     </header>
 

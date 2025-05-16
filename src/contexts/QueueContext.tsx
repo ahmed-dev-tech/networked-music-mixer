@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { extractVideoId, getYoutubeThumbnail } from "../utils/youtubeUtils";
@@ -40,6 +39,7 @@ const QueueContext = createContext<QueueContextType>({
     toggleVideo: () => {},
     addComment: async () => {},
     getComments: () => [],
+    getLeaderboard: () => [],
 });
 
 // Hook to use the queue context
@@ -299,6 +299,38 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
             console.error("Error disliking song:", error);
             toast.error(error.message || "Failed to dislike song");
         }
+    };
+
+    // Calculate leaderboard data
+    const getLeaderboard = () => {
+        if (queue.length === 0) return [];
+
+        // Group songs by username
+        const userSongs: Record<string, Song[]> = {};
+        
+        queue.forEach(song => {
+            if (!userSongs[song.addedBy]) {
+                userSongs[song.addedBy] = [];
+            }
+            userSongs[song.addedBy].push(song);
+        });
+        
+        // Calculate stats for each user
+        const leaderboardData = Object.entries(userSongs).map(([username, songs]) => {
+            const totalLikes = songs.reduce((sum, song) => sum + getLikeCount(song), 0);
+            const songCount = songs.length;
+            const averageLikes = songCount > 0 ? totalLikes / songCount : 0;
+            
+            return {
+                username,
+                totalLikes,
+                songCount,
+                averageLikes,
+            };
+        });
+        
+        // Sort by total likes (descending)
+        return leaderboardData.sort((a, b) => b.totalLikes - a.totalLikes);
     };
 
     // Listen to queue changes from Firebase
@@ -635,6 +667,7 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 toggleVideo,
                 addComment,
                 getComments,
+                getLeaderboard,
             }}
         >
             {children}

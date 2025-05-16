@@ -42,4 +42,10 @@ export interface QueueContextType {
     toggleVideo: () => void;
     addComment: (songId: string, text: string) => Promise<void>;
     getComments: (song: Song) => Comment[];
+    getLeaderboard: () => Array<{
+        username: string;
+        totalLikes: number;
+        songCount: number;
+        averageLikes: number;
+    }>;
 }
