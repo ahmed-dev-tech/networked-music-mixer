@@ -1,21 +1,28 @@
-
 export interface Song {
-  id: string;
-  videoId: string;
-  title: string;
-  thumbnail: string;
-  addedBy: string;
-  timestamp: number;
+    id: string;
+    videoId: string;
+    title: string;
+    thumbnail: string;
+    addedBy: string;
+    timestamp: number;
+    likes: { [userId: string]: boolean };
+    dislikes: { [userId: string]: boolean };
 }
 
 export interface QueueContextType {
-  queue: Song[];
-  currentSongIndex: number;
-  addToQueue: (url: string) => Promise<void>;
-  removeFromQueue: (id: string) => void;
-  playNext: () => void;
-  playPrevious: () => void;
-  skipTo: (index: number) => void;
-  isPlaying: boolean;
-  togglePlayPause: () => void;
+    queue: Song[];
+    currentSongIndex: number;
+    addToQueue: (url: string) => Promise<void>;
+    removeFromQueue: (id: string) => void;
+    playNext: () => void;
+    playPrevious: () => void;
+    skipTo: (index: number) => void;
+    isPlaying: boolean;
+    togglePlayPause: () => void;
+    likeSong: (songId: string) => Promise<void>;
+    dislikeSong: (songId: string) => Promise<void>;
+    getLikeCount: (song: Song) => number;
+    getDislikeCount: (song: Song) => number;
+    hasLiked: (song: Song) => boolean;
+    hasDisliked: (song: Song) => boolean;
 }

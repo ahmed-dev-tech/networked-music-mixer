@@ -1,47 +1,49 @@
-
-import React from 'react';
-import YouTubePlayer from '@/components/YouTubePlayer';
-import PlayControls from '@/components/PlayControls';
-import AddToQueue from '@/components/AddToQueue';
-import MusicQueue from '@/components/MusicQueue';
-import { QueueProvider } from '@/contexts/QueueContext';
+import React from "react";
+import YouTubePlayer from "@/components/YouTubePlayer";
+import PlayControls from "@/components/PlayControls";
+import MusicQueue from "@/components/MusicQueue";
+import AddToQueue from "@/components/AddToQueue";
+import { QueueProvider } from "@/contexts/QueueContext";
 
 const Index: React.FC = () => {
-  return (
-    <QueueProvider>
-      <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-screen-xl mx-auto">
-          <header className="mb-8 text-center">
-            <h1 className="text-3xl font-bold tracking-tight music-gradient bg-clip-text text-transparent">
-              YouTube Music Party
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              Share YouTube links and listen together
-            </p>
-          </header>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <YouTubePlayer />
-              <PlayControls />
-              <AddToQueue />
+    return (
+        <QueueProvider>
+            <div className='min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8'>
+                <div className='max-w-screen-xl mx-auto'>
+                    <header className='mb-8 text-center'>
+                        <h1 className='text-3xl font-bold tracking-tight music-gradient bg-clip-text'>
+                            YouTube Music Party
+                        </h1>
+                        <p className='mt-2 text-muted-foreground'>
+                            Share YouTube links and listen together
+                        </p>
+                    </header>
+
+                    <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                        <div className='lg:col-span-2 space-y-6'>
+                            <YouTubePlayer />
+                            <PlayControls />
+                            <AddToQueue />
+                        </div>
+
+                        <div className='space-y-4'>
+                            <h2 className='text-lg font-semibold flex items-center gap-2'>
+                                Play Queue
+                            </h2>
+                            <MusicQueue />
+                        </div>
+                    </div>
+
+                    <footer className='mt-12 pt-6 border-t border-muted text-center text-sm text-muted-foreground'>
+                        <p>
+                            Everyone on your network can see and add to this
+                            queue
+                        </p>
+                    </footer>
+                </div>
             </div>
-            
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                Play Queue
-              </h2>
-              <MusicQueue />
-            </div>
-          </div>
-          
-          <footer className="mt-12 pt-6 border-t border-muted text-center text-sm text-muted-foreground">
-            <p>Everyone on your network can see and add to this queue</p>
-          </footer>
-        </div>
-      </div>
-    </QueueProvider>
-  );
+        </QueueProvider>
+    );
 };
 
 export default Index;
