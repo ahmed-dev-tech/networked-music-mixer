@@ -1,13 +1,46 @@
-// Update this page (the content is just a fallback if you fail to update the page)
 
-const Index = () => {
+import React from 'react';
+import YouTubePlayer from '@/components/YouTubePlayer';
+import PlayControls from '@/components/PlayControls';
+import AddToQueue from '@/components/AddToQueue';
+import MusicQueue from '@/components/MusicQueue';
+import { QueueProvider } from '@/contexts/QueueContext';
+
+const Index: React.FC = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <QueueProvider>
+      <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-screen-xl mx-auto">
+          <header className="mb-8 text-center">
+            <h1 className="text-3xl font-bold tracking-tight music-gradient bg-clip-text text-transparent">
+              YouTube Music Party
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              Share YouTube links and listen together
+            </p>
+          </header>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <YouTubePlayer />
+              <PlayControls />
+              <AddToQueue />
+            </div>
+            
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                Play Queue
+              </h2>
+              <MusicQueue />
+            </div>
+          </div>
+          
+          <footer className="mt-12 pt-6 border-t border-muted text-center text-sm text-muted-foreground">
+            <p>Everyone on your network can see and add to this queue</p>
+          </footer>
+        </div>
       </div>
-    </div>
+    </QueueProvider>
   );
 };
 
