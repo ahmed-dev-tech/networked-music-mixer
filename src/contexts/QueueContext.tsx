@@ -1,7 +1,8 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { extractVideoId, getYoutubeThumbnail } from "../utils/youtubeUtils";
-import { Song, QueueContextType } from "../types/queue";
+import { Song, QueueContextType, Comment } from "../types/queue";
 import { toast } from "../components/ui/sonner";
 import { database } from "../config/firebase";
 import {
@@ -22,7 +23,7 @@ const QueueContext = createContext<QueueContextType>({
     username: null,
     setUsername: () => {},
     addToQueue: async () => {},
-    removeFromQueue: async () => {},
+    removeFromQueue: () => {},
     playNext: () => {},
     playPrevious: () => {},
     skipTo: () => {},
@@ -35,6 +36,10 @@ const QueueContext = createContext<QueueContextType>({
     hasDisliked: () => false,
     isSynced: false,
     toggleSync: () => {},
+    videoEnabled: true,
+    toggleVideo: () => {},
+    addComment: async () => {},
+    getComments: () => [],
 });
 
 // Hook to use the queue context
@@ -50,6 +55,10 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
         // Initialize sync state from localStorage
         return localStorage.getItem("musicAppSync") === "true";
     });
+    const [videoEnabled, setVideoEnabled] = useState<boolean>(() => {
+        // Initialize video state from localStorage
+        return localStorage.getItem("musicAppVideo") !== "false";
+    });
     const [username, setUsernameState] = useState<string | null>(() => {
         // Initialize username from localStorage
         return localStorage.getItem("musicAppUsername");
@@ -60,6 +69,13 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
         const newSyncState = !isSynced;
         setIsSynced(newSyncState);
         localStorage.setItem("musicAppSync", newSyncState.toString());
+    };
+
+    // Update localStorage when video state changes
+    const toggleVideo = () => {
+        const newVideoState = !videoEnabled;
+        setVideoEnabled(newVideoState);
+        localStorage.setItem("musicAppVideo", newVideoState.toString());
     };
 
     // Update localStorage when username changes
@@ -87,6 +103,76 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
     const hasDisliked = (song: Song) => {
         if (!song.dislikes || !username) return false;
         return Boolean(song.dislikes[username]);
+    };
+
+    const getComments = (song: Song): Comment[] => {
+        if (!song.comments) return [];
+        return Array.isArray(song.comments) ? song.comments : [];
+    };
+
+    const addComment = async (songId: string, text: string): Promise<void> => {
+        if (!username) {
+            toast.error("Please set your username first");
+            return;
+        }
+
+        try {
+            const song = queue.find((s) => s.id === songId);
+            if (!song) {
+                console.error("Song not found:", songId);
+                return;
+            }
+
+            // Get the queue reference
+            const queueRef = ref(database, "queue");
+            const queueSnapshot = await get(queueRef);
+            const queueData = queueSnapshot.val();
+
+            if (!queueData) {
+                console.error("Queue data not found");
+                return;
+            }
+
+            // Find the key of the song
+            const songKey = Object.keys(queueData).find(
+                (key) => queueData[key].id === songId
+            );
+
+            if (!songKey) {
+                console.error("Song key not found in queue data");
+                return;
+            }
+
+            const songRef = ref(database, `queue/${songKey}`);
+            const songSnapshot = await get(songRef);
+            const songData = songSnapshot.val();
+
+            if (!songData) {
+                console.error("Song data not found");
+                return;
+            }
+
+            // Create new comment
+            const newComment: Comment = {
+                id: uuidv4(),
+                text,
+                username,
+                timestamp: Date.now(),
+            };
+
+            // Get existing comments or create empty array
+            const currentComments = songData.comments || [];
+
+            // Add new comment
+            await update(songRef, {
+                comments: [...currentComments, newComment],
+            });
+
+            toast.success("Comment added");
+        } catch (error: any) {
+            console.error("Error adding comment:", error);
+            toast.error(error.message || "Failed to add comment");
+        }
     };
 
     const likeSong = async (songId: string) => {
@@ -331,6 +417,7 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 timestamp,
                 likes: {},
                 dislikes: {},
+                comments: [],
             };
 
             // Add to Firebase with timestamp
@@ -544,6 +631,10 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 setUsername,
                 isSynced,
                 toggleSync,
+                videoEnabled,
+                toggleVideo,
+                addComment,
+                getComments,
             }}
         >
             {children}
