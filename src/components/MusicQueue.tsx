@@ -6,7 +6,8 @@ import { Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 const MusicQueue: React.FC = () => {
-    const { queue, removeFromQueue, currentSongIndex, skipTo } = useQueue();
+    const { queue, removeFromQueue, currentSongIndex, skipTo, isSynced } =
+        useQueue();
 
     if (queue.length === 0) {
         return (
@@ -29,8 +30,16 @@ const MusicQueue: React.FC = () => {
                         index === currentSongIndex
                             ? "border-primary"
                             : "border-muted"
-                    } cursor-pointer hover:border-primary/50 transition-colors`}
-                    onClick={() => skipTo(index)}
+                    } ${
+                        !isSynced
+                            ? "cursor-pointer hover:border-primary/50"
+                            : ""
+                    } transition-colors`}
+                    onClick={() => {
+                        if (!isSynced) {
+                            skipTo(index);
+                        }
+                    }}
                 >
                     <CardContent className='p-4'>
                         <div className='flex items-start gap-4'>

@@ -588,10 +588,16 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 queueLength: queue.length,
             });
 
-            // Update the index
-            await set(ref(database, "currentIndex"), newIndex);
-            // Ensure it's playing
-            await set(ref(database, "isPlaying"), true);
+            if (isSynced) {
+                // Update the index in Firebase
+                await set(ref(database, "currentIndex"), newIndex);
+                // Ensure it's playing
+                await set(ref(database, "isPlaying"), true);
+            } else {
+                // Update local state only
+                setCurrentSongIndex(newIndex);
+                setIsPlaying(true);
+            }
 
             console.log("Successfully updated to next song");
         } catch (error: any) {
@@ -622,10 +628,16 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 queueLength: queue.length,
             });
 
-            // Update the index
-            await set(ref(database, "currentIndex"), newIndex);
-            // Ensure it's playing
-            await set(ref(database, "isPlaying"), true);
+            if (isSynced) {
+                // Update the index in Firebase
+                await set(ref(database, "currentIndex"), newIndex);
+                // Ensure it's playing
+                await set(ref(database, "isPlaying"), true);
+            } else {
+                // Update local state only
+                setCurrentSongIndex(newIndex);
+                setIsPlaying(true);
+            }
 
             console.log("Successfully updated to previous song");
         } catch (error: any) {
@@ -647,10 +659,16 @@ export const QueueProvider: React.FC<{ children: React.ReactNode }> = ({
                 queueLength: queue.length,
             });
 
-            // Update the index
-            await set(ref(database, "currentIndex"), index);
-            // Ensure it's playing
-            await set(ref(database, "isPlaying"), true);
+            if (isSynced) {
+                // Update the index in Firebase
+                await set(ref(database, "currentIndex"), index);
+                // Ensure it's playing
+                await set(ref(database, "isPlaying"), true);
+            } else {
+                // Update local state only
+                setCurrentSongIndex(index);
+                setIsPlaying(true);
+            }
 
             console.log("Successfully skipped to song");
         } catch (error: any) {

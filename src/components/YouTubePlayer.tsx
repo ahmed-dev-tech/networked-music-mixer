@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { useQueue } from "../contexts/QueueContext";
 import { formatYoutubeEmbedUrl } from "../utils/youtubeUtils";
@@ -37,7 +36,14 @@ declare global {
 }
 
 const YouTubePlayer: React.FC = () => {
-    const { queue, currentSongIndex, playNext, isPlaying, videoEnabled } = useQueue();
+    const {
+        queue,
+        currentSongIndex,
+        playNext,
+        isPlaying,
+        videoEnabled,
+        isSynced,
+    } = useQueue();
     const playerRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [playerReady, setPlayerReady] = useState(false);
@@ -102,7 +108,7 @@ const YouTubePlayer: React.FC = () => {
                 videoId: currentSong.videoId,
                 playerVars: {
                     autoplay: 1,
-                    controls: 1,
+                    controls: !isSynced ? 1 : 0,
                     enablejsapi: 1,
                     origin: window.location.origin,
                 },
@@ -171,7 +177,7 @@ const YouTubePlayer: React.FC = () => {
     // Update video visibility based on videoEnabled state
     useEffect(() => {
         if (!playerRef.current || !playerReady) return;
-        
+
         try {
             const iframe = playerRef.current.getIframe();
             if (iframe && iframe.style) {
