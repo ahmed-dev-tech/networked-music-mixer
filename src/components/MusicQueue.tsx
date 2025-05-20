@@ -30,16 +30,8 @@ const MusicQueue: React.FC = () => {
                         index === currentSongIndex
                             ? "border-primary"
                             : "border-muted"
-                    } ${
-                        !isSynced
-                            ? "cursor-pointer hover:border-primary/50"
-                            : ""
-                    } transition-colors`}
-                    onClick={() => {
-                        if (!isSynced) {
-                            skipTo(index);
-                        }
-                    }}
+                    } cursor-pointer hover:border-primary/50 transition-colors`}
+                    onClick={() => skipTo(index)}
                 >
                     <CardContent className='p-4'>
                         <div className='flex items-start gap-4'>
