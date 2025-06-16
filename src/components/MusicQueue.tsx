@@ -22,56 +22,52 @@ const MusicQueue: React.FC = () => {
     }
 
     return (
-        <div className='space-y-2'>
-            {queue.map((song, index) => (
-                <Card
-                    key={song.id}
-                    className={`${
-                        index === currentSongIndex
-                            ? "border-primary"
-                            : "border-muted"
-                    } ${
-                        !isSynced
-                            ? "cursor-pointer hover:border-primary/50"
-                            : ""
-                    } transition-colors`}
-                    onClick={() => {
-                        if (!isSynced) {
-                            skipTo(index);
-                        }
-                    }}
-                >
-                    <CardContent className='p-4'>
-                        <div className='flex items-start gap-4'>
-                            <img
-                                src={song.thumbnail}
-                                alt={song.title}
-                                className='w-16 h-12 object-cover rounded'
-                            />
-                            <div className='flex-1 min-w-0'>
-                                <h3 className='font-medium truncate'>
-                                    {song.title}
-                                </h3>
-                                <p className='text-sm text-muted-foreground'>
-                                    Added by {song.addedBy}
-                                </p>
-                            </div>
-                            <Button
-                                variant='ghost'
-                                size='icon'
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeFromQueue(song.id);
-                                }}
-                                className='shrink-0'
-                            >
-                                <Trash2 className='h-4 w-4' />
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
+        <Card className='h-[400px] overflow-hidden'>
+            <CardContent className='p-4 h-full'>
+                <div className='space-y-2 h-full overflow-y-auto pr-2'>
+                    {queue.map((song, index) => (
+                        <Card
+                            key={song.id}
+                            className={`${
+                                index === currentSongIndex
+                                    ? "border-primary"
+                                    : "border-muted"
+                            } cursor-pointer hover:border-primary/50 transition-colors`}
+                            onClick={() => skipTo(index)}
+                        >
+                            <CardContent className='p-4'>
+                                <div className='flex items-start gap-4'>
+                                    <img
+                                        src={song.thumbnail}
+                                        alt={song.title}
+                                        className='w-16 h-12 object-cover rounded'
+                                    />
+                                    <div className='flex-1 min-w-0'>
+                                        <h3 className='font-medium truncate'>
+                                            {song.title}
+                                        </h3>
+                                        <p className='text-sm text-muted-foreground'>
+                                            Added by {song.addedBy}
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant='ghost'
+                                        size='icon'
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeFromQueue(song.id);
+                                        }}
+                                        className='shrink-0'
+                                    >
+                                        <Trash2 className='h-4 w-4' />
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
     );
 };
 
